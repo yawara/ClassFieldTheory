@@ -21,19 +21,9 @@ open CategoryTheory ShortComplex ShortExact Limits
 
 -- instance : (forget₂ (Rep.{w} k G) Ab).Additive := ⟨rfl⟩
 
-/-- `CategoryTheory.Limits.compNatIso` weirdly uses `Functor.IsEquivalence` -/
-def CategoryTheory.Limits.compNatIso' {C D : Type*} [Category* C] [Category* D] [HasZeroMorphisms C]
-    {X Y : C} {f : X ⟶ Y} [HasZeroMorphisms D] (F : C ⥤ D) [F.PreservesZeroMorphisms] :
-  parallelPair f 0 ⋙ F ≅ parallelPair (F.map f) 0 :=
-  let app (j : WalkingParallelPair) :
-      (parallelPair f 0 ⋙ F).obj j ≅ (parallelPair (F.map f) 0).obj j :=
-    match j with
-    | .zero => Iso.refl _
-    | .one => Iso.refl _
-  NatIso.ofComponents app <| by
-    rintro ⟨i⟩ ⟨j⟩ f <;> cases f <;>
-      simp only [app, Functor.comp_map, parallelPair_map_left, parallelPair_map_right,
-        Functor.map_zero, Iso.refl_hom, Category.comp_id, Category.id_comp, zero_comp, comp_zero]
+-- `compNatIso'` (a workaround for mathlib's `compNatIso` needing `Functor.IsEquivalence`)
+-- was removed during the v4.31 bump: it is unused elsewhere in CFT, and its
+-- `NatIso.ofComponents` naturality no longer elaborates cleanly under v4.31.
 
 attribute [local instance] Functor.PreservesHomology.preservesKernel
   Functor.PreservesHomology.preservesCokernel in

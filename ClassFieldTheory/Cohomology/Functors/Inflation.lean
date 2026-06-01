@@ -72,8 +72,11 @@ lemma quotientToInvariantsFunctor'_obj_ρ (M : Rep R G) :
 set_option backward.isDefEq.respectTransparency false in
 lemma quotientToInvariantsFunctor'_obj_ρ_apply (M : Rep R G) (g : G) :
     (M ↑ surj).ρ (φ g) = (M.quotientToInvariants φ.ker).ρ g := by
-  simp [quotientToInvariantsFunctor'_obj_V, quotientToInvariantsFunctor'_obj_ρ,
-    quotientToInvariantsFunctor]
+  rw [quotientToInvariantsFunctor'_obj_ρ]
+  change (M.ρ.quotientToInvariants φ.ker)
+      ((QuotientGroup.quotientKerEquivOfSurjective φ surj).symm (φ g)) =
+    (M.ρ.quotientToInvariants φ.ker) (g : G ⧸ φ.ker)
+  rw [QuotientGroup.quotientKerEquivOfSurjective_symm_apply]
 
 @[simp] lemma quotientToInvariantsFunctor'_obj_ρ_apply₂ (M : Rep R G) (g : G)
     (v : (quotientToInvariantsFunctor' surj).obj M) :

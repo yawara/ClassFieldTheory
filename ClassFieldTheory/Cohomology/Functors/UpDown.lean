@@ -275,16 +275,26 @@ instance instIsIso_shortExact_upSES (M : Rep R G) (n : ℤ) :
   have _ : TrivialTateCohomology (coind₁'.obj M) := inferInstance
   exact ShortComplex.ShortExact.isIso_δ
     (TateCohomology.map_tateComplexFunctor_shortExact (shortExact_upSES M))
-    n (n + 1) rfl (by simpa using isZero_of_trivialTateCohomology' (coind₁'.obj M) n)
-    (by simpa using isZero_of_trivialTateCohomology' (coind₁'.obj M) (n + 1))
+    n (n + 1) rfl
+    (by
+      change IsZero ((tateComplexFunctor.obj (coind₁'.obj M)).homology n)
+      exact isZero_of_trivialTateCohomology' (coind₁'.obj M) n)
+    (by
+      change IsZero ((tateComplexFunctor.obj (coind₁'.obj M)).homology (n + 1))
+      exact isZero_of_trivialTateCohomology' (coind₁'.obj M) (n + 1))
 
 instance instIsIso_shortExact_downSES (M : Rep R G) (n : ℤ) :
     IsIso (TateCohomology.δ (shortExact_downSES M) n) := by
   have _ : TrivialTateCohomology (ind₁'.obj M) := inferInstance
   exact ShortComplex.ShortExact.isIso_δ
     (TateCohomology.map_tateComplexFunctor_shortExact (shortExact_downSES M))
-    n (n + 1) rfl (by simpa using isZero_of_trivialTateCohomology' (ind₁'.obj M) n)
-    (by simpa using isZero_of_trivialTateCohomology' (ind₁'.obj M) (n + 1))
+    n (n + 1) rfl
+    (by
+      change IsZero ((tateComplexFunctor.obj (ind₁'.obj M)).homology n)
+      exact isZero_of_trivialTateCohomology' (ind₁'.obj M) n)
+    (by
+      change IsZero ((tateComplexFunctor.obj (ind₁'.obj M)).homology (n + 1))
+      exact isZero_of_trivialTateCohomology' (ind₁'.obj M) (n + 1))
 
 @[simps! hom]
 def δUpIsoTate (M : Rep R G) (n : ℤ) :

@@ -23,7 +23,9 @@ theorem IsFilterComplete.forget {M σ τ ι : Type*} [LE ι]
     [IsFilterComplete F] : IsFilterComplete (forget ∘ F) where
   haus' x hx := Filtration.eq_zero F <| by simpa [faithful] using hx
   prec' x hx :=
-    have this (s : σ) : AddSubgroup.ofClass (forget s) = .ofClass s :=
+    have hforget (s : σ) : AddSubgroup.ofClass (forget s) = .ofClass s :=
       AddSubgroup.ext (faithful ·)
-    let f : FilterCauchySeq F := ⟨x, by simpa [this] using hx⟩
+    let f : FilterCauchySeq F := ⟨x, by
+      intro i j hij
+      simpa [hforget] using hx hij⟩
     ⟨limit F <| .mk _ f, fun i ↦ by simpa [faithful] using sub_limit_mem F f⟩

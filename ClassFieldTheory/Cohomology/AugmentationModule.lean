@@ -243,10 +243,10 @@ def H1_iso [Fintype G] :
     apply (H0trivial R G).toLinearEquiv.injective
     rw [← Iso.toLinearEquiv_symm, LinearEquiv.coe_toLinearMap, LinearEquiv.apply_symm_apply]
     change (H0trivial R G).hom.hom _ = _
-    rw [show (mapShortComplex₃ ..).f = map (.id G) (ε R G) 0 by simp, ← LinearMap.comp_apply,
+    rw [show (mapShortComplex₃ ..).f = map (.id G) (ε R G) 0 by rfl, ← LinearMap.comp_apply,
       ← ModuleCat.hom_comp, map_comp_H0trivial]
     simp only [ShortComplex.SnakeInput.L₁'_X₁, HomologicalComplex.HomologySequence.snakeInput_L₀,
-      Functor.mapShortComplex_obj, ShortComplex.map_X₂, cochainsFunctor_obj,
+      Functor.mapShortComplex_obj, ShortComplex.map_X₂,
       HomologicalComplex.homologyFunctor_obj, ModuleCat.hom_comp, map_smul, LinearMap.coe_comp,
       Function.comp_apply, smul_eq_mul]
     conv_lhs => enter [2, 2]; tactic => convert leftRegular.zeroι_norm R G
@@ -258,11 +258,14 @@ def H1_iso [Fintype G] :
       Submodule.span_le, Set.singleton_subset_iff]
     simp only [Nat.reduceAdd, ShortComplex.SnakeInput.L₁'_X₁,
       HomologicalComplex.HomologySequence.snakeInput_L₀, Functor.mapShortComplex_obj,
-      ShortComplex.map_X₂, cochainsFunctor_obj, HomologicalComplex.homologyFunctor_obj,
+      ShortComplex.map_X₂, HomologicalComplex.homologyFunctor_obj,
       ShortComplex.SnakeInput.L₁'_X₂, ShortComplex.map_X₃, ShortComplex.SnakeInput.L₁'_f,
       ShortComplex.map_g, cochainsFunctor_map, HomologicalComplex.homologyFunctor_map,
       Nat.card_eq_fintype_card, Submodule.comap_coe, LinearEquiv.coe_coe, Set.mem_preimage,
       SetLike.mem_coe]
+    rw [show (HomologicalComplex.HomologySequence.snakeInput
+        (map_cochainsFunctor_shortExact (aug_isShortExact R G)) 0 1 rfl).L₀.g =
+      map (.id G) (ε R G) 0 by rfl]
     rw [Iso.toLinearEquiv_symm, Iso.symm_symm_eq, Iso.toLinearEquiv_apply, map_comp_H0trivial_apply,
       leftRegular.zeroι_norm, map_sum]
     simpa [Ideal.mem_span_singleton'] using ⟨1, one_mul _⟩
@@ -291,23 +294,40 @@ def H1_iso' [Finite G] {H : Type} [Group H] [Fintype H] {φ : H →* G}
   refine Submodule.Quotient.equiv _ _ (H0trivial R H).symm.toLinearEquiv ?_
   rw [show LinearMap.ker (δ (aug_isShortExact' R G φ) 0 1 rfl).hom = _ from
     (mapShortComplex₃_exact (aug_isShortExact' R G φ) rfl).moduleCat_range_eq_ker.symm]
-  simp only [ShortComplex.map_X₃]
-  rw [LinearMap.range_eq_map, ← leftRegular.res_span_norm R G φ inj, Submodule.map_span,
-    ← Set.range_comp, Ideal.span, Submodule.map_span]
+  rw [show (mapShortComplex₃ (aug_isShortExact' R G φ) rfl).f =
+    map (.id H) ((resFunctor φ).map (ε R G)) 0 by rfl]
+  rw [LinearMap.range_eq_map, ← leftRegular.res_span_norm R G φ inj,
+    Submodule.map_span
+      ((groupCohomology.map (MonoidHom.id H) ((resFunctor φ).map (ε R G)) 0).hom)
+      (Set.range (leftRegular.res_norm R φ))]
+  rw [← Ideal.submodule_span_eq,
+    Submodule.map_span ((H0trivial R H).symm.toLinearEquiv.toLinearMap) {(Nat.card H : R)}]
   congr 1
   ext x
   simp only [Iso.toLinearMap_toLinearEquiv, Iso.symm_hom, Set.image_singleton,
     Nat.card_eq_fintype_card, Set.mem_singleton_iff, Nat.reduceAdd, ShortComplex.SnakeInput.L₁'_X₂,
     HomologicalComplex.HomologySequence.snakeInput_L₀, Functor.mapShortComplex_obj,
-    ShortComplex.map_X₃, cochainsFunctor_obj, HomologicalComplex.homologyFunctor_obj,
+    ShortComplex.map_X₃, HomologicalComplex.homologyFunctor_obj,
     ShortComplex.SnakeInput.L₁'_X₁, ShortComplex.map_X₂, ShortComplex.SnakeInput.L₁'_f,
     ShortComplex.map_g, hom_ofHom, Representation.isTrivial_def, LinearMap.id_coe, id_eq,
     Representation.IntertwiningMap.coe_eq_toLinearMap, cochainsFunctor_map,
     HomologicalComplex.homologyFunctor_map, Set.mem_range, Function.comp_apply]
-  have : (resFunctor φ).map (ε R G) = ofHom ⟨lift R R G (fun _ ↦ 1), fun _ ↦ by ext; simp⟩ := rfl
-  change _  ↔ ∃ g, groupCohomology.map (MonoidHom.id H) (ofHom _) 0 _ = _
-  rw [← this]
-  simp only [leftRegular.groupCoh_map_res_norm R G φ, eq_comm, exists_const]
-  rfl
+  constructor
+  · intro hx
+    rw [Set.mem_image]
+    refine ⟨leftRegular.res_norm R φ 1, Set.mem_range_self 1, ?_⟩
+    rw [hx]
+    change groupCohomology.map (MonoidHom.id H) ((resFunctor φ).map (ε R G)) 0
+        (leftRegular.res_norm R φ 1) =
+      (groupCohomology.H0trivial R H).toLinearEquiv.symm (Fintype.card H : R)
+    exact leftRegular.groupCoh_map_res_norm R G φ 1
+  · intro hx
+    rw [Set.mem_image] at hx
+    rcases hx with ⟨_, ⟨g, rfl⟩, hx⟩
+    rw [← hx]
+    change groupCohomology.map (MonoidHom.id H) ((resFunctor φ).map (ε R G)) 0
+        (leftRegular.res_norm R φ g) =
+      (groupCohomology.H0trivial R H).toLinearEquiv.symm (Fintype.card H : R)
+    exact leftRegular.groupCoh_map_res_norm R G φ g
 
 end Rep.aug

@@ -239,10 +239,30 @@ lemma map_H0Iso_hom_f_apply'.{u} {k G H : Type u} [CommRing k] [Group G] [Group 
 set_option backward.isDefEq.respectTransparency false in
 lemma cores_res₀ : rest (R := R) (S.subtype) 0 ≫ cores₀ = S.index • (.id _) := by
   ext M v
+  change ModuleCat.Hom.hom ((rest (R := R) S.subtype 0 ≫ cores₀).app M)
+      (v : groupCohomology M 0) =
+    ModuleCat.Hom.hom ((S.index • (𝟙 (functor R G 0))).app M)
+      (v : groupCohomology M 0)
   apply (ConcreteCategory.injective_of_mono_of_preservesPullback (H0Iso M).hom)
   ext
-  simp [rest, Subgroup.index, cores₀_obj, groupCohomology.map_H0Iso_hom_f_apply' _,
-    (M.ρ.mem_invariants ((H0Iso M).hom.hom v)).1 (Subtype.prop _)]
+  have h_inv (y : M.ρ.invariants) :
+      ↑((ConcreteCategory.hom (H0Iso M).hom)
+        ((ModuleCat.Hom.hom (H0Iso M).inv) y)) = (y : M) := by
+    exact congrArg Subtype.val (Iso.inv_hom_id_apply (H0Iso M) y)
+  simp [rest, Subgroup.index, cores₀_obj]
+  erw [h_inv]
+  have hv : (↑((ModuleCat.Hom.hom (H0Iso (M ↓ S.subtype)).hom)
+        ((ModuleCat.Hom.hom (map S.subtype (𝟙 (M ↓ S.subtype)) 0)) v)) : M) =
+      ↑((ConcreteCategory.hom (H0Iso M).hom) v) := by
+    have hmap := groupCohomology.map_H0Iso_hom_f_apply'
+      (f := S.subtype) (φ := 𝟙 (M ↓ S.subtype)) (x := (v : groupCohomology M 0))
+    exact congrArg (fun y : M ↓ S.subtype => (y : M)) hmap
+  change (∑ x : G ⧸ S, M.ρ (Quotient.out x)
+      (↑((ModuleCat.Hom.hom (H0Iso (M ↓ S.subtype)).hom)
+        ((ModuleCat.Hom.hom (map S.subtype (𝟙 (M ↓ S.subtype)) 0)) v)) : M)) =
+    Fintype.card (G ⧸ S) • ↑((ConcreteCategory.hom (H0Iso M).hom) v)
+  rw [hv]
+  simp [(M.ρ.mem_invariants ((H0Iso M).hom.hom v)).1]
 
 /-!
             rest                       cores
@@ -266,6 +286,8 @@ lemma commSqₙ (n : ℕ) (M : Rep R G) :
     refine comp_commSq _ _ _ _ _ _ _ (δ (shortExact_upSES_res M S.subtype) (n + 1) (n + 2) rfl)
       (rest_δ_naturality (shortExact_upSES M) S.subtype (n + 1) (n + 2) rfl).symm ?_
     simp [-up_obj, coresNatTrans, cores_obj, δUpNatIso, δUpIso]
+    erw [IsIso.hom_inv_id_assoc]
+    rfl
 
 set_option backward.isDefEq.respectTransparency false in
 lemma cores_res (n : ℕ) :
@@ -281,6 +303,7 @@ lemma cores_res (n : ℕ) :
     | m + 1 => δ_up_isIso M m|>.epi_of_iso _
     rw [← cancel_epi (δ (shortExact_upSES M) n (n + 1) rfl), ← commSqₙ n M, ih]
     simp
+    erw [Category.comp_id]
 
 set_option backward.isDefEq.respectTransparency false in
 /-- Any element of H^n-hat (n ∈ ℤ) is `|G|`-torsion. -/
@@ -338,6 +361,9 @@ lemma injects_to_sylowCoh {n : ℕ} [NeZero n] [Finite G] (M : Rep R G)
     ZeroMemClass.coe_zero, smul_zero, add_zero, map_smul, Module.End.natCast_apply,
     Subtype.mk.injEq]
   intro h
+  have heq (x : (functor R G n).obj M) := LinearMap.congr_fun eq x
+  erw [heq x1, heq x2] at h
+  simp only [Module.End.mul_apply, LinearMap.id_coe, id_eq, Module.End.natCast_apply] at h
   replace h := by simpa using congr((· + ((Nat.card P).gcdA P.toSubgroup.index : R) • 0) $h)
   nth_rw 1 [← Submodule.mem_torsionBy_iff _ _|>.1 hx1,
     ← Submodule.mem_torsionBy_iff _ _|>.1 hx2] at h
@@ -358,6 +384,9 @@ lemma groupCohomology_Sylow {n : ℕ} (hn : 0 < n) [Finite G] (M : Rep R G)
   simpa [Functor.comp_obj, functor_obj, rest_app, ne_eq] using by_contra fun hx2 ↦ hx' <|
     @Subtype.ext_iff _ (p := fun x ↦ x ∈ Submodule.torsionBy R (groupCohomology M n) (Nat.card P))
     ⟨x, pTorsion_eq_sylowTorsion M p P x|>.1 hx⟩ 0|>.1 <| groupCohomology.injects_to_sylowCoh M p P
-    (by simp [not_not.1 hx2])
+    (by
+      simp
+      exact (congrArg (fun y => ((Nat.card P).gcdB P.toSubgroup.index : R) • y)
+        (not_not.mp hx2)).trans (smul_zero _))
 
 end groupCohomology

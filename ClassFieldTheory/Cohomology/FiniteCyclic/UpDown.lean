@@ -246,23 +246,21 @@ lemma coind_ι_gg_map₁ : coind₁'_ι ≫ map₁ (R := R) (G := G) = 0 := by
 
 set_option backward.isDefEq.respectTransparency false in
 def map₂ : ind₁' (R := R) (G := G) ⟶ ind₁' where
-  app M := ofHom ⟨Representation.map₂, fun _ ↦ Representation.map₂_comm _ _⟩
-  -- {
-  --   hom := ofHom Representation.map₂
-  --   comm g := by
-  --     ext : 1
-  --     exact Representation.map₂_comm _ _
-  -- }
-  naturality X Y f:= by
+  app M := ofHom ⟨Representation.map₂ (R := R) (G := G) (A := M.V),
+    fun g ↦ Representation.map₂_comm (ρ := M.ρ) g⟩
+  naturality X Y f := by
     ext (w : G →₀ X.V)
-    simp only [ind₁'_obj, hom_comp, hom_ofHom, Representation.IntertwiningMap.comp_toLinearMap,
-      LinearMap.coe_comp, Representation.IntertwiningMap.coe_toLinearMap, Function.comp_apply]
-    ext g
-    simp [ind₁', Representation.map₂, Finsupp.mapDomain_mapRange, -Representation.map₂_apply_apply]
+    change Representation.map₂ (R := R) (G := G) (A := Y.V)
+        (Representation.ind₁'_map f.hom.toLinearMap w) =
+      Representation.ind₁'_map f.hom.toLinearMap
+        (Representation.map₂ (R := R) (G := G) (A := X.V) w)
+    simpa [Representation.map₂, Representation.ind₁'_map, Finsupp.mapDomain_mapRange]
+      using (Finsupp.mapRange_sub' (f := f.hom.toLinearMap) w
+        (Finsupp.mapDomain (fun x ↦ gen G * x) w)).symm
 
 lemma map₂_app_gg_ind₁'_π_app (M : Rep R G) :  map₂.app M ≫ ind₁'_π.app M = 0 := by
   ext : 2
-  exact Representation.ind₁'_π_comp_map₂
+  exact Representation.ind₁'_π_comp_map₂ (R := R) (G := G) (A := M.V)
 
 lemma map₂_gg_ind₁'_π : map₂ (R := R) (G := G) ≫ ind₁'_π = 0 := by
   ext : 2
@@ -295,9 +293,11 @@ lemma map₁_comp_ind₁'_iso_coind₁' :
     Representation.IntertwiningMap.coe_mk, Rep.mkIso_inv_hom_apply _, Representation.Equiv.mk_symm,
     Representation.Equiv.mk_apply, LinearEquiv.coe_symm_mk', equivFunOnFinite_symm_apply_apply,
     Representation.map₁_apply, map₂, Representation.map₂_apply_apply]
-  congr
-  classical simp [equivFunOnFinite, mapDomain, Finsupp.sum, Finsupp.single_apply,
-    eq_comm (b := d), ← inv_mul_eq_iff_eq_mul]
+  change x d - x ((gen G)⁻¹ * d) =
+    (Representation.map₂ (R := R) (G := G) (A := M.V)
+      ((Finsupp.linearEquivFunOnFinite R M.V G).symm x)) d
+  rw [Representation.map₂_apply]
+  simp [Finsupp.linearEquivFunOnFinite]
 
 set_option backward.isDefEq.respectTransparency false in
 /-- The first short complex in the periodicity sequence. -/
@@ -307,7 +307,9 @@ set_option backward.isDefEq.respectTransparency false in
   X₃ := ind₁'.obj M
   f := coind₁'_ι.app M
   g := map₁.app M ≫ (ind₁'_iso_coind₁'.app M).inv
-  zero := by ext; simp [map₁, ind₁'_iso_coind₁', Representation.map₁, funext_iff]
+  zero := by
+    change (coind₁'_ι.app M ≫ map₁.app M) ≫ (ind₁'_iso_coind₁'.app M).inv = 0
+    rw [coind_ι_gg_map₁_app, zero_comp]
 
 set_option backward.isDefEq.respectTransparency false in
 /-- The second short complex in the periodicity sequence. -/
@@ -345,8 +347,14 @@ lemma exact_periodSeq₁ : (periodSeq₁ M).Exact := by
     Representation.Equiv.mk_apply, EmbeddingLike.map_eq_zero_iff,
     Representation.IntertwiningMap.mem_range]
   intro w hw
+  have hw_map : Representation.map₁ (R := R) (G := G) (A := M.V) w = 0 := by
+    change (Representation.ind₁'_lequiv_coind₁' (R := R) (G := G) (V := M.V)).symm
+      (Representation.map₁ (R := R) (G := G) (A := M.V) w) = 0 at hw
+    apply (Representation.ind₁'_lequiv_coind₁' (R := R) (G := G) (V := M.V)).symm.injective
+    simpa using hw
   change w ∈ LinearMap.range Representation.coind₁'_ι
-  simp [← Representation.map₁_ker, hw]
+  rw [← Representation.map₁_ker (R := R) (G := G) (A := M.V)]
+  exact hw_map
 
 set_option backward.isDefEq.respectTransparency false in
 lemma exact_periodSeq₂ : (periodSeq₂ M).Exact := by

@@ -49,19 +49,26 @@ def herbrandSixTermSequence : CochainComplex (ModuleCat R) (Fin 6) where
   d_comp_d' i _ _ hij hjk := by
     simp only [ComplexShape.up_Rel] at hij hjk
     subst hij hjk
-    fin_cases i <;>
-        dsimp only [Fin.reduceFinMk, Fin.reduceAdd]
-    · rw [← Functor.map_comp, S.zero, Functor.map_zero]
-    · rw [← Category.assoc, ← ShortComplex.map_g]
+    fin_cases i
+    · change (functor R G 2).map S.f ≫ (functor R G 2).map S.g = 0
+      rw [← Functor.map_comp, S.zero, Functor.map_zero]
+    · change (functor R G 2).map S.g ≫
+        (δ hS 2 3 rfl ≫ (periodicCohomology 3 1 <| by decide).hom.app S.X₁) = 0
+      rw [← Category.assoc, ← ShortComplex.map_g]
       erw [(mapShortComplex₃ hS (Eq.refl 3)).zero]
       rw [Limits.zero_comp]
-    · rw [Category.assoc, ← NatTrans.naturality, ← ShortComplex.map_f]
+    · change (δ hS 2 3 rfl ≫ (periodicCohomology 3 1 <| by decide).hom.app S.X₁) ≫
+        (functor R G 1).map S.f = 0
+      rw [Category.assoc, ← NatTrans.naturality, ← ShortComplex.map_f]
       erw [(mapShortComplex₁ hS (Eq.refl 3)).zero_assoc]
       rw [Limits.zero_comp]
-    · rw [← Functor.map_comp, S.zero, Functor.map_zero]
-    · rw [← ShortComplex.map_g]
+    · change (functor R G 1).map S.f ≫ (functor R G 1).map S.g = 0
+      rw [← Functor.map_comp, S.zero, Functor.map_zero]
+    · change (functor R G 1).map S.g ≫ δ hS 1 2 rfl = 0
+      rw [← ShortComplex.map_g]
       erw [(mapShortComplex₃ hS (Eq.refl 2)).zero]
-    · rw [← ShortComplex.map_f]
+    · change δ hS 1 2 rfl ≫ (functor R G 2).map S.f = 0
+      rw [← ShortComplex.map_f]
       erw [(mapShortComplex₁ hS (Eq.refl 2)).zero]
 
 set_option backward.isDefEq.respectTransparency false in
@@ -79,9 +86,10 @@ lemma herbrandSixTermSequence_exactAt (i : Fin 6) : (herbrandSixTermSequence hS)
       ((periodicCohomology 3 1 <| by decide).app S.X₁)
       ((periodicCohomology 3 1 <| by decide).app S.X₂) ?_ ?_
     · cat_disch
-    · dsimp only [herbrandSixTermSequence, Fin.reduceFinMk, Fin.reduceAdd]
-      rw [Iso.app_hom, ← (periodicCohomology 3 1 _).hom.naturality]
-      cat_disch
+    · change (periodicCohomology 3 1 <| by decide).hom.app S.X₁ ≫
+        (functor R G 1).map S.f =
+        (functor R G 3).map S.f ≫ (periodicCohomology 3 1 <| by decide).hom.app S.X₂
+      exact ((periodicCohomology 3 1 <| by decide).hom.naturality S.f).symm
   · exact mapShortComplex₂_exact hS 1
   · exact mapShortComplex₃_exact hS (Eq.refl 2)
 
@@ -91,10 +99,16 @@ lemma herbrandQuotient_ne_zero_of_shortExact₃
   rw [herbrandQuotient_ne_zero] at *
   obtain ⟨_, _⟩ :
       Finite ((herbrandSixTermSequence hS).sc 2).X₃ ∧
-      Finite ((herbrandSixTermSequence hS).sc 5).X₃ := by simpa using h₁
+      Finite ((herbrandSixTermSequence hS).sc 5).X₃ := by
+    simpa [HomologicalComplex.sc, HomologicalComplex.shortComplexFunctor,
+      HomologicalComplex.shortComplexFunctor', CochainComplex.prev, CochainComplex.next,
+      herbrandSixTermSequence] using h₁
   obtain ⟨_, _⟩ :
       Finite ((herbrandSixTermSequence hS).sc 5).X₁ ∧
-      Finite ((herbrandSixTermSequence hS).sc 2).X₁ := by simpa using h₂
+      Finite ((herbrandSixTermSequence hS).sc 2).X₁ := by
+    simpa [HomologicalComplex.sc, HomologicalComplex.shortComplexFunctor,
+      HomologicalComplex.shortComplexFunctor', CochainComplex.prev, CochainComplex.next,
+      herbrandSixTermSequence] using h₂
   exact ⟨(herbrandSixTermSequence_exactAt hS 5).moduleCat_finite,
     (herbrandSixTermSequence_exactAt hS 2).moduleCat_finite⟩
 
@@ -104,10 +118,16 @@ lemma herbrandQuotient_ne_zero_of_shortExact₂
   rw [herbrandQuotient_ne_zero] at *
   obtain ⟨_, _⟩ :
       Finite ((herbrandSixTermSequence hS).sc 4).X₁ ∧
-      Finite ((herbrandSixTermSequence hS).sc 1).X₁ := by simpa using h₁
+      Finite ((herbrandSixTermSequence hS).sc 1).X₁ := by
+    simpa [HomologicalComplex.sc, HomologicalComplex.shortComplexFunctor,
+      HomologicalComplex.shortComplexFunctor', CochainComplex.prev, CochainComplex.next,
+      herbrandSixTermSequence] using h₁
   obtain ⟨_, _⟩ :
       Finite ((herbrandSixTermSequence hS).sc 4).X₃ ∧
-      Finite ((herbrandSixTermSequence hS).sc 1).X₃ := by simpa using h₃
+      Finite ((herbrandSixTermSequence hS).sc 1).X₃ := by
+    simpa [HomologicalComplex.sc, HomologicalComplex.shortComplexFunctor,
+      HomologicalComplex.shortComplexFunctor', CochainComplex.prev, CochainComplex.next,
+      herbrandSixTermSequence] using h₃
   exact ⟨(herbrandSixTermSequence_exactAt hS 4).moduleCat_finite,
     (herbrandSixTermSequence_exactAt hS 1).moduleCat_finite⟩
 
@@ -117,10 +137,16 @@ lemma herbrandQuotient_ne_zero_of_shortExact₁
   rw [herbrandQuotient_ne_zero] at *
   obtain ⟨_, _⟩ :
       Finite ((herbrandSixTermSequence hS).sc 3).X₃ ∧
-      Finite ((herbrandSixTermSequence hS).sc 0).X₃ := by simpa using h₂
+      Finite ((herbrandSixTermSequence hS).sc 0).X₃ := by
+    simpa [HomologicalComplex.sc, HomologicalComplex.shortComplexFunctor,
+      HomologicalComplex.shortComplexFunctor', CochainComplex.prev, CochainComplex.next,
+      herbrandSixTermSequence] using h₂
   obtain ⟨_, _⟩ :
       Finite ((herbrandSixTermSequence hS).sc 0).X₁ ∧
-      Finite ((herbrandSixTermSequence hS).sc 3).X₁ := by simpa using h₃
+      Finite ((herbrandSixTermSequence hS).sc 3).X₁ := by
+    simpa [HomologicalComplex.sc, HomologicalComplex.shortComplexFunctor,
+      HomologicalComplex.shortComplexFunctor', CochainComplex.prev, CochainComplex.next,
+      herbrandSixTermSequence, show (-1 : Fin 6) = 5 by ext; simp] using h₃
   exact ⟨(herbrandSixTermSequence_exactAt hS 3).moduleCat_finite,
     (herbrandSixTermSequence_exactAt hS 0).moduleCat_finite⟩
 

@@ -290,12 +290,17 @@ instance : FiniteDimensional K L := by
   refine b₁.ext b₂ (fun i hi ↦ ?_) fun i hi ↦ ?_
   · obtain ⟨a, ha⟩ := ValuativeRel.valuation_surjective i
     let i0 := Valuation.restrict vK a
+    letI : LinearOrderedCommGroupWithZero (MonoidWithZeroHom.ValueGroup₀ vK) :=
+      MonoidWithZeroHom.ValueGroup₀.instLinearOrderedCommGroupWithZero
     have hi0 : i0 ≠ 0 := by
       intro h
       subst i0
       simp_all
+    have hi0pos : (0 : MonoidWithZeroHom.ValueGroup₀ vK) < i0 :=
+      lt_of_le_of_ne bot_le hi0.symm
     have : 0 < Valuation.RankOne.hom (valuation K) i0 := by
-      convert (Valuation.RankOne.strictMono (valuation K)) (zero_lt_iff.2 hi0); simp
+      convert (Valuation.RankOne.strictMono (valuation K)) hi0pos
+      simp
     obtain ⟨n, hn⟩ := _root_.exists_pow_lt_of_lt_one this hϖ1
     refine ⟨ε ^ n, pow_pos ε.2.1 n, fun p hp ↦ ?_⟩
     dsimp
@@ -337,7 +342,7 @@ lemma algebraMap_mem_integer (x : 𝒪[K]) : (algebraMap 𝒪[K] L) x ∈ 𝒪[L
   simpa only [map_one] using (ValuativeExtension.algebraMap_le (B := L)).mpr hx
 
 -- by David Ang
-instance : Algebra 𝒪[K] 𝒪[L] where
+noncomputable instance : Algebra 𝒪[K] 𝒪[L] where
   smul r a := ⟨r • a, Algebra.smul_def r (a : L) ▸ mul_mem (algebraMap_mem_integer ..) a.2⟩
   algebraMap := (algebraMap K L).restrict 𝒪[K] 𝒪[L] fun x hx => algebraMap_mem_integer K L ⟨x, hx⟩
   commutes' _ _ := Subtype.ext (Algebra.commutes _ _)

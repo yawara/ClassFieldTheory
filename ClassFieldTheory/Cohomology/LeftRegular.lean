@@ -58,9 +58,7 @@ open RepresentationTheory.groupCohomology
 lemma zeroι_norm [Fintype G] :
     (zeroι _).hom (leftRegular.norm R G) = ∑ g : G, single g 1 := by
   have := (groupCohomology.H0Iso (leftRegular R G)).toLinearEquiv.apply_symm_apply
-    ⟨∑ g : G, MonoidAlgebra.of _ _ g,
-    fun g ↦ by simpa using show ∑ x : G, MonoidAlgebra.of _ _ (g * x) = _ from
-      Finset.sum_equiv (Equiv.mulLeft g) (by grind) <| fun _ _ ↦ rfl⟩
+    (norm' R G)
   exact congr($this)
 
 lemma H0Iso_res_norm {H : Type} [Group H] [Fintype H] (φ : H →* G) (g : G) :

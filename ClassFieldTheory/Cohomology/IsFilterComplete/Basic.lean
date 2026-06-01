@@ -190,8 +190,10 @@ variable {M ι σ : Type*} [AddCommGroup M] [Preorder ι] [Preorder σ] [SetLike
 
 theorem FilterCauchySeq.mk_surjective (y : FilterCauchySeq (F ∘ toDual)) :
     ∃ x hx, .mk x hx = y :=
-  ⟨y.val, fun _ _ hij ↦ sup_le (α := AddSubgroup M) le_rfl
-    (by simpa [← SetLike.coe_subset_coe] using F.2 hij) (y.2 hij), rfl⟩
+  ⟨y.val, fun i j hij ↦ sup_le (α := AddSubgroup M) le_rfl
+    (by
+      simpa [← SetLike.coe_subset_coe] using F.2 (show toDual j ≤ toDual i from hij))
+    (y.2 hij), rfl⟩
 
 end Antitone
 
@@ -208,11 +210,17 @@ variable {M N σ τ : Type*} [AddCommGroup M] [AddCommGroup N]
 -- and Kenny thinks that under reasonable assumptions, `ℕ` will just be cofinal in `ι`.
 def partialSum : ((i : ℕ) → F (toDual i)) →+ FilterCauchySeq (F ∘ toDual) where
   toFun a := .mk (fun i ↦ ∑ j ∈ Finset.range i, a j) fun i₁ i₂ h ↦ by
-    dsimp only
     rw [← Finset.sum_range_add_sum_Ico _ h, sub_mem_comm_iff, add_sub_cancel_left]
     exact sum_mem fun j hj ↦ SetLike.coe_subset_coe.2 (F.2 (Finset.mem_Ico.mp hj).1) (a j).2
-  map_zero' := by ext; simp; rfl
-  map_add' _ _ := by ext; simp [Finset.sum_add_distrib]; rfl
+  map_zero' := by
+    ext i
+    change (∑ j ∈ Finset.range i, (0 : M)) = 0
+    simp
+  map_add' a b := by
+    ext i
+    change (∑ j ∈ Finset.range i, ((a j : M) + (b j : M))) =
+      (∑ j ∈ Finset.range i, (a j : M)) + ∑ j ∈ Finset.range i, (b j : M)
+    exact Finset.sum_add_distrib
 
 namespace IsFilterComplete
 
@@ -220,8 +228,9 @@ noncomputable def sum [IsFilterComplete (F ∘ toDual)] : ((i : ℕ) → F (toDu
   (limit (F ∘ toDual) : _ →+ _).comp <| (Completion.mk (F ∘ toDual)).comp (partialSum F)
 
 theorem sum_sub_mem [IsFilterComplete (F ∘ toDual)] {x : ∀ i, F (toDual i)} {i : ℕ} :
-    sum F x - ∑ j ∈ Finset.range i, x j ∈ F (toDual i) :=
-  limit_sub_mem (F ∘ toDual) _
+    sum F x - ∑ j ∈ Finset.range i, x j ∈ F (toDual i) := by
+  simpa [sum, partialSum] using
+    (limit_sub_mem (F ∘ toDual) ((partialSum F) x) (i := i))
 
 variable {F G} {Φ : Type*} [FunLike Φ M N] [AddMonoidHomClass Φ M N] {φ : Φ}
   (h : ∀ ⦃i x⦄, x ∈ F i → φ x ∈ G i)

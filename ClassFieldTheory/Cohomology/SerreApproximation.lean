@@ -150,7 +150,9 @@ set_option backward.isDefEq.respectTransparency false in
 /-- `Z(w)` is isomorphic to the submodule of `Z(M)` called `w.toCocycles q`. -/
 noncomputable def _root_.Subrepresentation.toCocyclesIso (w : Subrepresentation M.ρ) (q : ℕ) :
     w.toCocycles q ≃ₗ[k] cocycles w.toRep q where
-  toFun x := cocyclesMk (w.toCochainsIso q ⟨iCocycles M q x.val, x.2⟩) <|
+  toFun x := cocyclesMk (w.toCochainsIso q ⟨iCocycles M q x.val, by
+    change (ConcreteCategory.hom (iCocycles M q)) x.val ∈ w.toCochains q
+    exact x.2⟩) <|
     (map_eq_zero_iff _ (w.toCochainsIso (q + 1)).symm.injective).mp <| by
     ext
     rw [← inhomogeneousCochains.d_def]
@@ -158,15 +160,23 @@ noncomputable def _root_.Subrepresentation.toCocyclesIso (w : Subrepresentation 
     rw [LinearEquiv.symm_apply_apply, Subtype.coe_mk, iCocycles_d_apply]
     rfl
   invFun x := ⟨cocyclesMap (.id G) w.toRepSubtype q x, by
-    simp only [Subrepresentation.toCocycles, CochainComplex.of_x, Submodule.mem_comap,
+    simp only [Subrepresentation.toCocycles, CochainComplex.of_X, Submodule.mem_comap,
       cocyclesMap_comp_iCocycles_apply, cochainsMap_id_f_hom_eq_compLeft]
     exact ((w.toCochainsIso q).symm (iCocycles w.toRep q x)).2⟩
-  map_add' _ _ := iCocycles_injective <| by
-    simp_rw [map_add, iCocycles_mk, Submodule.coe_add, map_add]; rfl
-  map_smul' _ _ := iCocycles_injective <| by
-    simp_rw [map_smul, iCocycles_mk, Submodule.coe_smul, map_smul]; rfl
+  map_add' _ _ := by
+    apply iCocycles_injective
+    rw [map_add, iCocycles_mk, iCocycles_mk, iCocycles_mk, ← map_add]
+    congr 1
+    ext
+    simp [map_add]
+  map_smul' _ _ := by
+    apply iCocycles_injective
+    rw [map_smul, iCocycles_mk, iCocycles_mk, ← map_smul]
+    congr 1
+    ext
+    simp [map_smul]
   left_inv x := Subtype.ext <| iCocycles_injective <| by
-    simp only [CochainComplex.of_x, cocyclesMap_comp_iCocycles_apply,
+    simp only [CochainComplex.of_X, cocyclesMap_comp_iCocycles_apply,
       cochainsMap_id_f_hom_eq_compLeft]
     erw [iCocycles_mk]
     rfl
@@ -231,25 +241,44 @@ set_option backward.isDefEq.respectTransparency false in
 @[simps!] noncomputable def kerDEquivCocycles (q : ℕ) :
     LinearMap.ker ((inhomogeneousCochains M).d q (q + 1)).hom ≃ₗ[k] cocycles M q where
   toFun x := cocyclesMk x.val <| by
-    have := x.2
-    simp_rw [LinearMap.mem_ker, inhomogeneousCochains.d_def] at this
-    exact this -- simpa is very slow
-  invFun x := ⟨iCocycles _ _ x, by simp [iCocycles_d'_apply]⟩
-  left_inv x := by ext : 1; exact iCocycles_mk ..
-  right_inv x := iCocycles_injective <| iCocycles_mk ..
-  map_add' _ _ := iCocycles_injective <| by simp_rw [map_add, iCocycles_mk, Submodule.coe_add]
-  map_smul' _ _ := iCocycles_injective <| by simp_rw [map_smul, iCocycles_mk]; rfl
+    rw [← inhomogeneousCochains.d_def]
+    exact x.2
+  invFun x := ⟨iCocycles M q x, by
+    change ((inhomogeneousCochains M).d q (q + 1)).hom (iCocycles M q x) = 0
+    exact iCocycles_d_apply x⟩
+  left_inv x := Subtype.ext <| iCocycles_mk x.val _
+  right_inv x := iCocycles_injective <| iCocycles_mk (iCocycles M q x) _
+  map_add' _ _ := by
+    apply iCocycles_injective
+    rw [map_add, iCocycles_mk, iCocycles_mk, iCocycles_mk]
+    rfl
+  map_smul' _ _ := by
+    apply iCocycles_injective
+    rw [map_smul, iCocycles_mk, iCocycles_mk]
+    simp
 
-instance [IsFilterComplete M_] (q : ℕ) : IsFilterComplete fun i ↦ (M_ i).toCocycles q :=
+instance (q : ℕ) : IsFilterComplete fun i ↦ (M_ i).toCocycles q :=
   let help (i) := ((M_ i).toCochains q).submoduleOf
     (LinearMap.ker ((inhomogeneousCochains M).d q (q + 1)).hom)
   have : IsFilterComplete help := .ker (N_ := fun i ↦ (M_ i).toCochains _)
     ((inhomogeneousCochains M).d q (q + 1)).hom fun x i h ↦ toCochains_le_comap_d h
   .of_iso (kerDEquivCocycles M q) (M_ := help) <| by
-    refine (kerDEquivCocycles M q).symm.surjective.forall.mpr fun _ _ ↦ ?_
-    simp_rw [LinearEquiv.apply_symm_apply, help, Submodule.submoduleOf, Submodule.mem_comap,
-      Submodule.subtype_apply, kerDEquivCocycles_symm_apply_coe]
-    rfl
+    intro x i
+    constructor
+    · intro hx
+      rw [Subrepresentation.toCocycles, Submodule.mem_comap]
+      change (ModuleCat.Hom.hom (iCocycles M q))
+          (cocyclesMk x.val (by rw [← inhomogeneousCochains.d_def]; exact x.2)) ∈
+        (M_ i).toCochains q
+      rw [iCocycles_mk]
+      exact hx
+    · intro hx
+      rw [Subrepresentation.toCocycles, Submodule.mem_comap] at hx
+      change (ModuleCat.Hom.hom (iCocycles M q))
+          (cocyclesMk x.val (by rw [← inhomogeneousCochains.d_def]; exact x.2)) ∈
+        (M_ i).toCochains q at hx
+      rw [iCocycles_mk] at hx
+      exact hx
 
 -- (kerDEquivCocycles M q)
 /-- Given map `f: M ⟶ N` and `q : ℕ`, if `H^{q+1}(M) ⟶ H^{q+1}(N)` is surjective, then any

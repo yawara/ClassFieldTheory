@@ -63,7 +63,16 @@ end Submodule
 
 def FilterCauchySeq.mkSubmodule (x : ι → M) (hx : ∀ ⦃i j : ι⦄, i ≤ j → x i - x j ∈ M_ i ⊔ M_ j) :
     FilterCauchySeq M_ :=
-  ⟨x, by simpa [set, AddSubgroup.mem_sup, mem_sup] using hx⟩
+  ⟨x, by
+    intro i j hij
+    obtain ⟨y, hy, z, hz, hsum⟩ := Submodule.mem_sup.mp (hx hij)
+    exact AddSubgroup.mem_sup.mpr ⟨y, by
+      change y ∈ (AddSubgroup.ofClass (M_ i) : Set M)
+      rw [AddSubgroup.coe_ofClass]
+      exact hy, z, by
+      change z ∈ (AddSubgroup.ofClass (M_ j) : Set M)
+      rw [AddSubgroup.coe_ofClass]
+      exact hz, hsum⟩⟩
 
 namespace Filtration
 
@@ -80,7 +89,18 @@ theorem mk_submodule (haus : ⨅ i, M_ i = ⊥)
       ∃ L, ∀ i, x i - L ∈ M_ i) :
     IsFilterComplete M_ where
   haus' x hx := (mem_bot R).mp <| haus ▸ (mem_iInf _).mpr hx
-  prec' := by simpa [AddSubgroup.mem_sup, Submodule.mem_sup] using prec
+  prec' := by
+    intro x hx
+    apply prec x
+    intro i j hij
+    obtain ⟨y, hy, z, hz, hsum⟩ := AddSubgroup.mem_sup.mp (hx hij)
+    exact Submodule.mem_sup.mpr ⟨y, by
+      change y ∈ (M_ i : Set M)
+      rw [← AddSubgroup.coe_ofClass]
+      exact hy, z, by
+      change z ∈ (M_ j : Set M)
+      rw [← AddSubgroup.coe_ofClass]
+      exact hz, hsum⟩
 
 variable (M_) [IsFilterComplete M_]
 

@@ -38,11 +38,11 @@ set_option backward.isDefEq.respectTransparency false in
 lemma tateNorm_eq (M : Rep R G) :
     tateNorm M = ModuleCat.ofHom (Finsupp.lsum R fun _ ↦ LinearMap.pi fun _ ↦ M.ρ.norm) := by
   ext
-  simp only [CochainComplex.of_x, tateNorm, ChainComplex.of_x, chainsIso₀,
+  simp only [tateNorm, chainsIso₀,
     LinearEquiv.toModuleIso_hom, Rep.norm, cochainsIso₀, LinearEquiv.toModuleIso_inv,
     ModuleCat.hom_comp, ModuleCat.hom_ofHom, hom_ofHom, coe_comp, LinearEquiv.coe_coe,
     LinearEquiv.funUnique_symm_apply, Function.comp_apply, Finsupp.lsingle_apply,
-    Finsupp.LinearEquiv.finsuppUnique_apply, AddEquiv.funUnique_symm_apply,
+    Finsupp.uniqueLinearEquiv_apply, AddEquiv.funUnique_symm_apply,
     Finsupp.lsum_comp_lsingle, pi_apply]
   congr
   simp only [Finsupp.single_apply, ite_eq_left_iff]
@@ -60,7 +60,10 @@ lemma norm_comp_d_eq_zero (M : Rep R G) : M.norm.toModuleCatHom ≫ d₀₁ M = 
 
 set_option backward.isDefEq.respectTransparency false in
 lemma tateNorm_comp_d (M : Rep R G) : tateNorm M ≫ (inhomogeneousCochains M).d 0 1 = 0 := by
-  simp [tateNorm]
+  rw [tateNorm]
+  simp only [Category.assoc]
+  rw [groupCohomology.eq_d₀₁_comp_inv]
+  simp
 
 @[simp]
 lemma comp_eq_zero (M : Rep R G) : d₁₀ M ≫ M.norm.toModuleCatHom = 0 := by
@@ -69,8 +72,10 @@ lemma comp_eq_zero (M : Rep R G) : d₁₀ M ≫ M.norm.toModuleCatHom = 0 := by
 
 set_option backward.isDefEq.respectTransparency false in
 lemma d_comp_tateNorm (M : Rep R G) : (inhomogeneousChains M).d 1 0 ≫ tateNorm M = 0 := by
-  simp only [ChainComplex.of_x, CochainComplex.of_x, tateNorm, ← Category.assoc]
-  simp [← comp_d₁₀_eq]
+  rw [tateNorm]
+  simp only [← Category.assoc]
+  rw [← groupHomology.comp_d₁₀_eq]
+  simp
 
 /-- The Tate norm connecting complexes of inhomogeneous chains and cochains. -/
 @[simps]
@@ -126,6 +131,14 @@ set_option backward.isDefEq.respectTransparency false in
 def tateComplexFunctor : Rep R G ⥤ CochainComplex (ModuleCat R) ℤ where
   obj M := tateComplex M
   map := tateComplex.map
+  map_id M := by
+    unfold tateComplex.map tateComplex
+    rw [← CochainComplex.ConnectData.map_id (h := tateComplexConnectData M)]
+    congr; simp
+  map_comp f g := by
+    unfold tateComplex.map tateComplex
+    rw [CochainComplex.ConnectData.map_comp_map]
+    congr; simp [groupHomology.chainsMap_id_comp]
 
 /-- The functor taking a representation of `G` to its `n`-th Tate cohomology group. -/
 def tateCohomology (n : ℤ) : Rep R G ⥤ ModuleCat R :=
@@ -168,6 +181,19 @@ lemma map_tateComplexFunctor_shortExact {S : ShortComplex (Rep R G)} (hS : S.Sho
   · exact .map_of_natIso _ (tateComplex.eval_neg _).symm <| map_chainsFunctor_eval_shortExact _ hS
 
 instance : (tateComplexFunctor (R := R) (G := G)).Additive where
+  map_add {X Y} f g := by
+    ext (n | n) x
+    · change ((groupCohomology.cochainsMap (MonoidHom.id G) (f + g)).f n) x =
+        (((groupCohomology.cochainsMap (MonoidHom.id G) f).f n +
+          (groupCohomology.cochainsMap (MonoidHom.id G) g).f n) x)
+      ext a
+      simp [groupCohomology.cochainsMap, Rep.add_hom, LinearMap.compLeft]
+    · change ((groupHomology.chainsMap (MonoidHom.id G) (f + g)).f n) x =
+        (((groupHomology.chainsMap (MonoidHom.id G) f).f n +
+          (groupHomology.chainsMap (MonoidHom.id G) g).f n) x)
+      apply Finsupp.ext
+      intro a
+      simp [groupHomology.chainsMap, Rep.add_hom]
 
 /-
 The next two statements say that `tateComplexFunctor` is an exact functor.
@@ -267,7 +293,9 @@ lemma map_comp {Q : Type u} [Group Q] [Fintype Q] {M : Rep R G} {N : Rep R H} {P
 lemma map_id {M : Rep R G} (n : ℤ) :
     map (MulEquiv.refl G) (𝟙 M) n = 𝟙 ((tateCohomology n).obj M) := by
   unfold map
-  simp [cochinasMap_id, tateCohomology, tateComplex]
+  change HomologicalComplex.homologyMap (cochainsMap (MulEquiv.refl G) (𝟙 M)) n =
+    𝟙 (HomologicalComplex.homology (tateComplexConnectData M).cochainComplex n)
+  rw [cochinasMap_id, HomologicalComplex.homologyMap_id]
 
 lemma map_congr {M : Rep R G} {N : Rep R H} {e1 e2 : G ≃* H} (he : e1 = e2) {φ : M ⟶ N ↓ e1}
     {ψ : M ⟶ N ↓ e2} (h : φ.hom.toLinearMap = ψ.hom.toLinearMap) (n : ℤ) :
@@ -316,7 +344,9 @@ end zeroIso
 def zeroIso (M : Rep R G) : (tateCohomology 0).obj M ≅
     ModuleCat.of R (M.ρ.invariants ⧸ (range M.ρ.norm).submoduleOf M.ρ.invariants) := calc
   (tateCohomology 0).obj M
-    ≅ (zeroIso.sc M).homology := ShortComplex.homologyMapIso (zeroIso.isoShortComplexH0 M)
+    ≅ (zeroIso.sc M).homology := by
+      change ((tateComplex M).sc 0).homology ≅ (zeroIso.sc M).homology
+      exact ShortComplex.homologyMapIso (zeroIso.isoShortComplexH0 M)
   _ ≅ ModuleCat.of R (LinearMap.ker (groupCohomology.d₀₁ M).hom ⧸ _) :=
     ShortComplex.moduleCatHomologyIso _
   _ ≅ ModuleCat.of R (M.ρ.invariants ⧸ (range M.ρ.norm).submoduleOf M.ρ.invariants) := by
@@ -341,7 +371,10 @@ and the corresponding parts of the Tate complex. -/
   (tateComplex M).isoSc' (-2) (-1) 0 (by simp) (by simp) ≪≫
     ShortComplex.isoMk (chainsIso₁ M) (chainsIso₀ M) (cochainsIso₀ M)
       (groupHomology.comp_d₁₀_eq M)
-      (by simp [sc, tateComplex, tateNorm])
+      (by
+        change (chainsIso₀ M).hom ≫ M.norm.toModuleCatHom =
+          tateNorm M ≫ (cochainsIso₀ M).hom
+        simp [tateNorm, Category.assoc])
 
 end negOneIso
 
@@ -353,7 +386,9 @@ def negOneIso (M : Rep R G) :
       ModuleCat.of R (ker M.ρ.norm ⧸
         (Representation.Coinvariants.ker M.ρ).submoduleOf (ker M.ρ.norm)) := calc
   (tateCohomology (-1)).obj M
-    ≅ (negOneIso.sc M).homology := ShortComplex.homologyMapIso (negOneIso.isoShortComplexHneg1 M)
+    ≅ (negOneIso.sc M).homology := by
+      change ((tateComplex M).sc (-1)).homology ≅ (negOneIso.sc M).homology
+      exact ShortComplex.homologyMapIso (negOneIso.isoShortComplexHneg1 M)
   _ ≅ ModuleCat.of R (LinearMap.ker M.ρ.norm ⧸ _) := ShortComplex.moduleCatHomologyIso _
   _ ≅ _ := by
     refine (Submodule.Quotient.equiv _ _ (LinearEquiv.ofEq _ _ rfl) ?_).toModuleIso
@@ -362,7 +397,7 @@ def negOneIso (M : Rep R G) :
     rw [← range_d₁₀_eq_coinvariantsKer, Submodule.submoduleOf, Submodule.map_comap_eq_of_le,
       ← Submodule.map_comp, ← LinearMap.range_comp]
     · rfl
-    · simpa [LinearMap.range_le_iff_comap, ← ker_comp, -comp_eq_zero] using
+    · simpa [LinearMap.range_le_iff_comap, ← ker_comp, -comp_eq_zero, Rep.norm] using
         congr(($(comp_eq_zero M)).hom)
 
 variable [M.ρ.IsTrivial] {n : ℤ} {N : ℕ}

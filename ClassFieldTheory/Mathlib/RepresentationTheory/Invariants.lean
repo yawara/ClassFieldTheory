@@ -23,9 +23,12 @@ lemma groupCohomology.zeroι_naturality {X Y : Rep k G} (f : X ⟶ Y) :
   aesop (add simp zeroι)
 
 variable (k G) in
+set_option backward.isDefEq.respectTransparency false in
 /-- `zeroEmb` is the natural transformation from the `H0 : Rep k G ⥤ ModuleCat k` functor to
 the forgetful functor `Rep k G ⥤ ModuleCat k`. -/
 noncomputable def groupCohomology.zeroEmb : functor k G 0 ⟶ forget₂ (Rep k G) (ModuleCat k) where
   app X := groupCohomology.zeroι X
+  naturality X Y f := by
+    simpa only [functor_map, Rep.forget₂_moduleCat_map] using groupCohomology.zeroι_naturality f
 
 end RepresentationTheory

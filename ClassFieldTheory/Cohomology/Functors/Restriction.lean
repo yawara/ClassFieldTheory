@@ -136,8 +136,12 @@ exact sequences.
   · rintro ⟨h⟩
     exact {
       exact := by rwa [ShortComplex.exact_map_iff_of_faithful]
-      mono_f := by simp_all [mono_iff_injective]
-      epi_g := by simp_all [epi_iff_surjective]
+      mono_f := by
+        rw [ShortComplex.map_f, mono_iff_injective]
+        exact (mono_iff_injective S.f).mp ‹Mono S.f›
+      epi_g := by
+        rw [ShortComplex.map_g, epi_iff_surjective]
+        exact (epi_iff_surjective S.g).mp ‹Epi S.g›
     }
 end monoid
 
@@ -157,15 +161,18 @@ namespace groupCohomology
 variable {G S S' : Type u} [Group G] [Group S] (φ : S →* G) [Group S'] (ψ : S' →* S)
   {M : Rep.{u} R G}
 
+set_option backward.isDefEq.respectTransparency false in
 /--
 The restriction map `Hⁿ(G,M) ⟶ Hⁿ(H,M)`, defined as a morphism of functors
 -/
 def rest (n : ℕ) : functor R G n ⟶ Rep.resFunctor φ ⋙ functor R S n  where
   app M               := map φ (𝟙 (M ↓ φ)) n
   naturality M₁ M₂ f  := by
-    simp only [functor_obj, Functor.comp_obj, functor_map, Functor.comp_map]
-    rw [←map_comp, ←map_comp]
-    congr 1
+    simp only [functor_map, Functor.comp_map,
+      ← cancel_epi (groupCohomology.π _ n), HomologicalComplex.homologyπ_naturality_assoc,
+      HomologicalComplex.homologyπ_naturality, ← HomologicalComplex.cyclesMap_comp_assoc,
+      ← cochainsMap_comp, res_obj_ρ, Category.comp_id, Rep.hom_id]
+    rfl
 
 lemma rest_app (n : ℕ) (M : Rep R G) :
     (rest φ n).app M = map φ (𝟙 (M ↓ φ)) n := rfl

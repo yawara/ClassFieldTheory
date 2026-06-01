@@ -30,7 +30,10 @@ def CategoryTheory.Limits.compNatIso' {C D : Type*} [Category* C] [Category* D] 
     match j with
     | .zero => Iso.refl _
     | .one => Iso.refl _
-  NatIso.ofComponents app <| by rintro ⟨i⟩ ⟨j⟩ <;> rintro (g | g) <;> simp [app]
+  NatIso.ofComponents app <| by
+    rintro ⟨i⟩ ⟨j⟩ f <;> cases f <;>
+      simp only [app, Functor.comp_map, parallelPair_map_left, parallelPair_map_right,
+        Functor.map_zero, Iso.refl_hom, Category.comp_id, Category.id_comp, zero_comp, comp_zero]
 
 attribute [local instance] Functor.PreservesHomology.preservesKernel
   Functor.PreservesHomology.preservesCokernel in

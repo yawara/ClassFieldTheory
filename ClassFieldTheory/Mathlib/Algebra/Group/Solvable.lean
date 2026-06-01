@@ -51,7 +51,7 @@ theorem solvable_ind {G : Type*} [Group G] [IsSolvable G] [Finite G] {motive : S
       revert normal
       rw [sub_eq]
       intro normal
-      simp_rw [← Abelianization.eq_def]
+      show IsMulCommutative (Abelianization t)
       exact ⟨⟨mul_comm⟩⟩
     have htt : (⁅t, t⁆).subgroupOf t ≠ ⊤ := by simpa using hhh.not_ge
     obtain ⟨t', ⟨-, ht'⟩, _, cyclic⟩ := exists_isCyclic_quotient_of_finite htt comm
